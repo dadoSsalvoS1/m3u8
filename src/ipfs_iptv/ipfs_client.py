@@ -91,3 +91,26 @@ class IPFSClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to pin CID {cid}: {e}")
             return False
+
+    def get_cid_base32(self, cid: str) -> str:
+        """
+        Converts a CID (usually v0, Qm...) to CIDv1 base32 (bafy...).
+        Useful for subdomain gateways like dweb.link.
+        """
+        try:
+            # IPFS API endpoint: /api/v0/cid/base32?arg=<cid>
+            response = requests.post(f"{self.api_url}/cid/base32", params={'arg': cid}, timeout=10)
+            response.raise_for_status()
+
+            # Response is typically JSON: {"CidStr": "bafy..."}
+            # Or plaintext depending on version, but usually JSON for API.
+            # Let's handle both.
+            try:
+                data = response.json()
+                return data.get('CidStr', cid)
+            except json.JSONDecodeError:
+                return response.text.strip()
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to convert CID {cid} to base32: {e}")
+            return cid

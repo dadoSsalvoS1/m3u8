@@ -65,8 +65,17 @@ class PlaylistGenerator:
                     # Add fallback links as comments or separate entries if player supports it?
                     # Standard M3U8 doesn't support multiple URLs for same stream easily without variant streams.
                     # We will add them as comments for manual usage if needed.
-                    for fallback in self.config.fallback_gateways:
-                         f.write(f"# EXT-X-ALTERNATE: {fallback}{cid}\n")
+                    # The format string handles different gateway types (subdomain vs path)
+                    cid_v1 = item.get('cid_v1', cid) # Fallback to v0 if v1 missing
+
+                    for fallback_tmpl in self.config.fallback_gateways:
+                         # Check if template has format placeholders, if not, assume old behavior (path with CIDv0)
+                         if '{' in fallback_tmpl:
+                             fallback_url = fallback_tmpl.format(cid=cid, cid_v1=cid_v1)
+                         else:
+                             fallback_url = f"{fallback_tmpl}{cid}"
+
+                         f.write(f"# EXT-X-ALTERNATE: {fallback_url}\n")
 
             logger.info(f"Advanced Playlist generated successfully at {output_path}")
 

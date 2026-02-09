@@ -100,6 +100,9 @@ def main():
                 # Upload
                 cid = client.add_file(filepath)
 
+                # Get CIDv1 (base32) for subdomain gateways
+                cid_v1 = client.get_cid_base32(cid)
+
                 # Metadata extraction
                 group = scanner.get_group_from_path(filepath, args.dir)
                 title = os.path.splitext(filename)[0]
@@ -110,6 +113,7 @@ def main():
                 media_items.append({
                     'name': title,
                     'cid': cid,
+                    'cid_v1': cid_v1,
                     'group': group,
                     'tvg_name': title, # Placeholder
                     'tvg_id': '', # Placeholder

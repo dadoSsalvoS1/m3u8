@@ -11,10 +11,10 @@ class Config:
     ipfs_gateway_url: str = "https://ipfs.io/ipfs/"
 
     # Advanced: Fallback gateways for reliability
+    # Format strings allow using {cid} for v0 (Qm...) or {cid_v1} for v1 base32 (bafy...)
     fallback_gateways: List[str] = field(default_factory=lambda: [
-        "https://dweb.link/ipfs/",
-        "https://cloudflare-ipfs.com/ipfs/",
-        "https://gateway.pinata.cloud/ipfs/"
+        "https://{cid_v1}.ipfs.dweb.link/",
+        "https://gateway.pinata.cloud/ipfs/{cid}"
     ])
 
     media_extensions: List[str] = field(default_factory=lambda: [
@@ -31,6 +31,7 @@ class Config:
         if not self.ipfs_gateway_url.endswith("/"):
             self.ipfs_gateway_url += "/"
 
-        self.fallback_gateways = [
-            gw if gw.endswith("/") else gw + "/" for gw in self.fallback_gateways
-        ]
+        # Don't enforce trailing slash for formatted gateways as they might be subdomains without paths
+        # But for path-based ones (without {) it's good practice.
+        # Since we use format strings now, we skip the automatic slash addition for fallbacks
+        pass
