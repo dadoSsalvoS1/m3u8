@@ -9,13 +9,32 @@ from .media_scanner import MediaScanner
 from .playlist_generator import PlaylistGenerator
 
 def setup_logging(level_name: str):
+    # Fix for Windows console encoding issues (cp1252 vs utf-8)
+    if sys.platform == 'win32':
+        # Reconfigure stdout/stderr to use utf-8 if possible (Python 3.7+)
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8')
+                sys.stderr.reconfigure(encoding='utf-8')
+            except Exception as e:
+                # If reconfigure fails, we log it but proceed, hoping for the best
+                print(f"Warning: Failed to set console encoding to utf-8: {e}", file=sys.stderr)
+
     level = getattr(logging, level_name.upper(), logging.INFO)
+
+    # Configure handlers
+    # Use utf-8 for file handler to support all characters
+    file_handler = logging.FileHandler("ipfs_iptv.log", encoding='utf-8')
+
+    # Use sys.stdout for stream handler (which we tried to set to utf-8)
+    stream_handler = logging.StreamHandler(sys.stdout)
+
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler("ipfs_iptv.log")
+            stream_handler,
+            file_handler
         ]
     )
 
