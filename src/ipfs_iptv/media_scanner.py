@@ -28,6 +28,18 @@ class MediaScanner:
         return media_files
 
     @staticmethod
+    def get_group_from_path(filepath: str, root_dir: str) -> str:
+        """
+        Extracts a group name from the directory structure relative to the root scan directory.
+        e.g., C:\Videos\Movies\Action\DieHard.mp4 -> Group: "Movies/Action"
+        """
+        rel_path = os.path.relpath(os.path.dirname(filepath), root_dir)
+        if rel_path == ".":
+            return "Uncategorized"
+        # Normalize slashes to forward slashes for consistency
+        return rel_path.replace(os.sep, "/")
+
+    @staticmethod
     def get_file_size(filepath: str) -> str:
         """Helper to get human-readable file size."""
         size = os.path.getsize(filepath)
