@@ -6,6 +6,16 @@ const resultsCountEl = document.getElementById("results-count");
 const resultsEl = document.getElementById("results");
 const searchButton = document.getElementById("search-button");
 
+function escapeHtml(text) {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function setLoading(isLoading) {
   if (!searchButton) return;
   if (isLoading) {
@@ -41,11 +51,22 @@ function renderResults(results) {
 
   const html = results
     .map((r) => {
-      const title = r.title || "Untitled";
-      const magnet = r.magnet || "";
-      const url = r.url || "#";
-      const qualities = Array.isArray(r.qualities) ? r.qualities : [];
-      const infoText = (r.info_text || "").toString().slice(0, 800);
+      const title = escapeHtml(r.title || "Untitled");
+
+      let magnet = r.magnet || "";
+      if (magnet && !magnet.startsWith("magnet:")) {
+        magnet = "";
+      }
+
+      let url = r.url || "#";
+      // Basic protocol check
+      if (url !== "#" && !/^https?:\/\//i.test(url)) {
+        url = "#";
+      }
+
+      const qualities = Array.isArray(r.qualities) ? r.qualities.map(escapeHtml) : [];
+      const infoText = escapeHtml((r.info_text || "").toString().slice(0, 800));
+      const source = escapeHtml(r.source || "Unknown Source");
 
       const qualityLabel =
         qualities.length > 0 ? qualities.join(", ") : "Unknown quality";
@@ -54,6 +75,7 @@ function renderResults(results) {
         <article class="result-card">
           <h3 class="result-title">${title}</h3>
           <div class="result-meta">
+            <span class="pill badge-source">${source}</span>
             <span class="pill">${qualityLabel}</span>
             <span class="pill badge-muted">Magnet link</span>
           </div>

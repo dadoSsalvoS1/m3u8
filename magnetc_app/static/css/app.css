@@ -275,6 +275,12 @@ button.loading .btn-label {
   color: var(--text-subtle);
 }
 
+.pill.badge-source {
+  background: rgba(160, 100, 255, 0.15);
+  color: #c49aff;
+  border: 1px solid rgba(160, 100, 255, 0.2);
+}
+
 .result-links {
   margin-top: 6px;
   display: flex;
