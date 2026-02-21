@@ -19,7 +19,6 @@ class ApacheTorrentScraper(BaseScraper):
         results: list[dict[str, Any]] = []
 
         try:
-            # Assuming standard wordpress search structure like RedeTorrent
             # https://apachetorrent.com/?s=QUERY
             search_url = f"{self.BASE_URL}/?s={query}"
             logger.info(f"[{self.name}] Navigating to: {search_url}")
@@ -32,8 +31,8 @@ class ApacheTorrentScraper(BaseScraper):
 
             # Check for results
             try:
-                # Wait for article or post class
-                await page.wait_for_selector("article, .post", timeout=30000)
+                # Based on debug: results are in .capaname
+                await page.wait_for_selector(".capaname", timeout=30000)
             except Exception:
                 content = await page.content()
                 if "Nada encontrado" in content or "Not Found" in content:
@@ -46,24 +45,18 @@ class ApacheTorrentScraper(BaseScraper):
                 return []
 
             # Extract detail links
-            # Looking for links inside headings or thumbnails
-            # Generic scraper approach: find all links that look like post permalinks
-            # Usually strict matches to the domain and avoiding /category/ /tag/ etc.
+            # Structure: .capaname > a (href)
 
-            potential_links = await page.locator("article a, .post a").all()
+            links = await page.locator(".capaname > a").all()
 
             detail_urls = []
-            for link in potential_links:
+            for link in links[:Config.MAX_DETAIL_PAGES]:
                 href = await link.get_attribute("href")
-                if href and self.BASE_URL in href and "/page/" not in href:
-                    # Avoid duplicates immediately
+                if href and self.BASE_URL in href:
                     if href not in detail_urls:
                         detail_urls.append(href)
 
-            # Limit
-            detail_urls = detail_urls[:Config.MAX_DETAIL_PAGES]
-
-            logger.info(f"[{self.name}] Found {len(detail_urls)} potential torrents. Extracting details...")
+            logger.info(f"[{self.name}] Found {len(detail_urls)} torrents. Extracting details...")
 
             for url in detail_urls:
                 try:
@@ -79,7 +72,7 @@ class ApacheTorrentScraper(BaseScraper):
 
                     info_text = ""
                     # Try generic content grab
-                    content_el = page.locator(".entry-content, .content, article")
+                    content_el = page.locator(".entry-content, .content, article, #content")
                     if await content_el.count():
                         info_text = (await content_el.first.inner_text())[:500]
 
