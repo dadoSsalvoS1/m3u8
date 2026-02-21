@@ -73,6 +73,7 @@ class DatabaseManager:
                 ("https://kickasstorrents.cr", "KickassTorrents", "specific"),
                 ("https://redetorrent.com", "RedeTorrent", "specific"),
                 ("https://apachetorrent.com", "ApacheTorrent", "specific"),
+                ("https://btdig.com", "BTDigg", "specific"),
             ]
 
             for url, name, type_ in default_sites:

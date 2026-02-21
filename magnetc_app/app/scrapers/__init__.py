@@ -6,6 +6,7 @@ from .yts import YTSScraper
 from .kickass import KickassTorrentsScraper
 from .redetorrent import RedeTorrentScraper
 from .apache import ApacheTorrentScraper
+from .btdigg import BTDiggScraper
 
 __all__ = [
     "BaseScraper",
@@ -15,5 +16,6 @@ __all__ = [
     "YTSScraper",
     "KickassTorrentsScraper",
     "RedeTorrentScraper",
-    "ApacheTorrentScraper"
+    "ApacheTorrentScraper",
+    "BTDiggScraper"
 ]

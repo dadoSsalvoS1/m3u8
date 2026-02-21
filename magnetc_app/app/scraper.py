@@ -12,6 +12,7 @@ from .scrapers import (
     KickassTorrentsScraper,
     RedeTorrentScraper,
     ApacheTorrentScraper,
+    BTDiggScraper,
 )
 from .scrapers.generic import GenericScraper
 from .exceptions import CloudflareBlocked, NavigationTimeout
@@ -49,6 +50,7 @@ def load_scrapers_from_db() -> list:
         clean_domain(KickassTorrentsScraper.BASE_URL): KickassTorrentsScraper,
         clean_domain(RedeTorrentScraper.BASE_URL): RedeTorrentScraper,
         clean_domain(ApacheTorrentScraper.BASE_URL): ApacheTorrentScraper,
+        clean_domain(BTDiggScraper.BASE_URL): BTDiggScraper,
     }
 
     for site in active_sites:
