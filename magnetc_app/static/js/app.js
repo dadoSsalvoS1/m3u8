@@ -102,13 +102,20 @@ async function handleSearch(event) {
   event.preventDefault();
 
   const query = (queryInput?.value || "").trim();
+  const searchType = document.getElementById("search-type")?.value || "title";
+
   if (!query) {
-    setFeedback("Please enter a movie name before searching.", "error");
+    setFeedback("Please enter a query before searching.", "error");
     return;
   }
 
   setLoading(true);
-  setFeedback("Searching...", "success");
+  if (searchType === "actor") {
+    setFeedback("Searching and performing deep web scan for actor... (This may take longer)", "success");
+  } else {
+    setFeedback("Searching...", "success");
+  }
+
   resultsEl.innerHTML = "";
   resultsSection.classList.add("hidden");
   resultsCountEl.textContent = "";
@@ -119,7 +126,7 @@ async function handleSearch(event) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, search_type: searchType }),
     });
 
     const data = await response.json();

@@ -16,13 +16,19 @@
     </p>
 
     <form id="search-form" class="search-form">
+    <div class="input-group">
+      <select id="search-type" class="search-select">
+        <option value="title">Movie Title</option>
+        <option value="actor">Actor Name (Deep Scan)</option>
+      </select>
       <input
         id="query"
         type="text"
-        placeholder="Enter a movie name, e.g. 'Inception 1080p'"
+        placeholder="Enter movie name or actor..."
         autocomplete="off"
         required
       />
+    </div>
       <button type="submit" id="search-button">
         <span class="btn-label">Search</span>
         <span class="btn-spinner" aria-hidden="true"></span>

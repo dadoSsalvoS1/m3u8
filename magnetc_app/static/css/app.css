@@ -105,28 +105,53 @@ body {
   align-items: stretch;
 }
 
-.search-form input {
-  flex: 1 1 220px;
-  padding: 10px 12px;
+.input-group {
+  display: flex;
+  flex: 1 1 300px;
+  gap: 0;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
   background: rgba(6, 8, 24, 0.8);
-  color: var(--text);
-  outline: none;
-  font-size: 0.94rem;
+  overflow: hidden;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
-    background var(--transition-fast), transform var(--transition-fast);
+    transform var(--transition-fast);
 }
 
-.search-form input::placeholder {
-  color: rgba(168, 176, 214, 0.7);
-}
-
-.search-form input:focus {
+.input-group:focus-within {
   border-color: rgba(76, 125, 255, 0.8);
   box-shadow: 0 0 0 1px rgba(76, 125, 255, 0.4);
   background: rgba(8, 11, 32, 0.96);
   transform: translateY(-1px);
+}
+
+.search-select {
+  background: transparent;
+  border: none;
+  color: var(--text-subtle);
+  padding: 10px 15px;
+  border-right: 1px solid var(--border-subtle);
+  outline: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.search-select option {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.search-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  font-size: 0.94rem;
+}
+
+.search-form input::placeholder {
+  color: rgba(168, 176, 214, 0.7);
 }
 
 .search-form button {

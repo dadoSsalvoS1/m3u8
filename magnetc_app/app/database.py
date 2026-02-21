@@ -51,6 +51,39 @@ class DatabaseManager:
                 )
             ''')
 
+            # Discovered Sites table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS sites (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT UNIQUE,
+                    name TEXT,
+                    is_active BOOLEAN DEFAULT 1,
+                    type TEXT DEFAULT 'generic', -- 'specific' or 'generic'
+                    last_success TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
+            # Seed default sites
+            default_sites = [
+                ("https://yts.rs", "YTS", "specific"),
+                ("https://1337x.to", "1337x", "specific"),
+                ("https://thepiratebay.org", "ThePirateBay", "specific"),
+                ("https://filmestorrent.top", "FilmesTorrent", "specific"),
+                ("https://kickasstorrents.cr", "KickassTorrents", "specific"),
+                ("https://redetorrent.com", "RedeTorrent", "specific"),
+                ("https://apachetorrent.com", "ApacheTorrent", "specific"),
+            ]
+
+            for url, name, type_ in default_sites:
+                try:
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO sites (domain, name, type) VALUES (?, ?, ?)",
+                        (url, name, type_)
+                    )
+                except Exception:
+                    pass
+
             conn.commit()
             conn.close()
 
@@ -136,5 +169,39 @@ class DatabaseManager:
             results = [dict(row) for row in rows]
             conn.close()
             return results
+
+    def get_active_sites(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            conn = self._get_connection()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM sites WHERE is_active = 1")
+            rows = cursor.fetchall()
+            sites = [dict(row) for row in rows]
+            conn.close()
+            return sites
+
+    def add_discovered_site(self, url: str) -> bool:
+        with self._lock:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url)
+                domain = f"{parsed.scheme}://{parsed.netloc}"
+                name = parsed.netloc.replace("www.", "").split(".")[0].capitalize()
+
+                conn = self._get_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO sites (domain, name, type) VALUES (?, ?, 'generic')",
+                    (domain, name)
+                )
+                conn.commit()
+                conn.close()
+                return True
+            except sqlite3.IntegrityError:
+                return False # Already exists
+            except Exception as e:
+                logger.error(f"Failed to add site {url}: {e}")
+                return False
 
 db = DatabaseManager()
