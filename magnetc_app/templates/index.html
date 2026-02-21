@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Magnet Finder{% endblock %}
+
+{% block content %}
+<section class="search-panel">
+  <h1 class="search-title">Search for Movie Magnets</h1>
+  <p class="search-subtitle">
+    Type a movie name and we will scan torrent sources for magnet links and quality info.
+  </p>
+
+  <form id="search-form" class="search-form">
+    <input
+      id="query"
+      type="text"
+      placeholder="Enter a movie name, e.g. 'Inception 1080p'"
+      autocomplete="off"
+      required
+    />
+    <button type="submit" id="search-button">
+      <span class="btn-label">Search</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </form>
+
+  <div id="feedback" class="feedback" aria-live="polite"></div>
+</section>
+
+<section id="results-section" class="results-section hidden">
+  <div class="results-header">
+    <h2>Results</h2>
+    <span id="results-count" class="results-count"></span>
+  </div>
+  <div id="results" class="results-grid"></div>
+</section>
+{% endblock %}

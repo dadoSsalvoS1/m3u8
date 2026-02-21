@@ -1,0 +1,13 @@
+ * Serving Flask app 'app'
+ * Debug mode: off
+2026-02-21 01:57:18,577 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8100
+2026-02-21 01:57:18,577 INFO werkzeug [33mPress CTRL+C to quit[0m
+2026-02-21 01:57:25,635 INFO werkzeug 127.0.0.1 - - [21/Feb/2026 01:57:25] "GET / HTTP/1.1" 200 -
+2026-02-21 01:57:25,659 INFO werkzeug 127.0.0.1 - - [21/Feb/2026 01:57:25] "GET /static/css/app.css HTTP/1.1" 200 -
+2026-02-21 01:57:25,660 INFO werkzeug 127.0.0.1 - - [21/Feb/2026 01:57:25] "GET /static/js/app.js HTTP/1.1" 200 -
+2026-02-21 01:57:26,300 INFO magnet_search_app Starting search for query: 'Inception 1080p'
+2026-02-21 01:57:26,924 INFO magnet_search_app Navigating to: https://filmestorrent.top/
+2026-02-21 01:57:30,175 INFO magnet_search_app Site response: Nenhum resultado encontrado para: Inception 1080p
+2026-02-21 01:57:30,175 WARNING magnet_search_app No results found or search failed
+2026-02-21 01:57:30,235 INFO werkzeug 127.0.0.1 - - [21/Feb/2026 01:57:30] "POST /api/search HTTP/1.1" 200 -
