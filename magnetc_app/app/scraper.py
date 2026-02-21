@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from playwright.async_api import async_playwright
 
 from .config import Config, configure_logging
-from .scrapers import FilmesTorrentScraper, PirateBayScraper, LeetXScraper
+from .scrapers import FilmesTorrentScraper, PirateBayScraper, LeetXScraper, YTSScraper
 
 logger = configure_logging()
 
@@ -27,7 +27,10 @@ async def search_movie(
     results: list[dict[str, Any]] = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--disable-blink-features=AutomationControlled"],
+        )
         # Create a shared context. Note: some sites might need separate contexts if cookies conflict,
         # but for simple scraping shared context is usually fine and faster.
         context = await browser.new_context(user_agent=Config.MAGNET_SITE_USER_AGENT)
@@ -36,6 +39,7 @@ async def search_movie(
             FilmesTorrentScraper(),
             PirateBayScraper(),
             LeetXScraper(),
+            YTSScraper(),
         ]
 
         # Run all scrapers concurrently

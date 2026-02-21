@@ -22,17 +22,20 @@ class LeetXScraper(BaseScraper):
             logger.info(f"[{self.name}] Navigating to: {search_url}")
 
             try:
-                await page.goto(search_url, timeout=60000)
+                await page.goto(search_url, timeout=60000, wait_until="domcontentloaded")
             except Exception as e:
                 logger.error(f"[{self.name}] Failed to load URL: {e}")
                 return []
 
             # Check for results table
             try:
-                await page.wait_for_selector("table.table-list", timeout=30000)
+                await page.wait_for_selector("table.table-list", timeout=10000)
             except Exception:
-                if "No results were found" in await page.content():
+                content = await page.content()
+                if "No results were found" in content:
                     logger.info(f"[{self.name}] No results found for '{query}'")
+                elif "Just a moment..." in content or "Attention Required" in content:
+                    logger.warning(f"[{self.name}] Cloudflare blocked request.")
                 else:
                     logger.warning(f"[{self.name}] Results table not found or blocked.")
                 return []
@@ -51,7 +54,7 @@ class LeetXScraper(BaseScraper):
             # Visit details
             for url in detail_urls:
                 try:
-                    await page.goto(url, timeout=30000)
+                    await page.goto(url, timeout=30000, wait_until="domcontentloaded")
                     await asyncio.sleep(0.5)
 
                     magnet_link = page.locator('a[href^="magnet:"]').first

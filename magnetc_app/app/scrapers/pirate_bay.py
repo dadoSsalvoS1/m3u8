@@ -27,7 +27,7 @@ class PirateBayScraper(BaseScraper):
         try:
             logger.info(f"[{self.name}] Navigating to: {search_url}")
             try:
-                await page.goto(search_url, timeout=60000)
+                await page.goto(search_url, timeout=60000, wait_until="domcontentloaded")
             except Exception as e:
                 logger.error(f"[{self.name}] Failed to load URL: {e}")
                 return []
@@ -35,12 +35,14 @@ class PirateBayScraper(BaseScraper):
             # Wait for table or no results
             try:
                 # Expecting a table with id 'searchResult'
-                await page.wait_for_selector("#searchResult", timeout=30000)
+                await page.wait_for_selector("#searchResult", timeout=15000)
             except Exception:
                 # Check for "No results" text if possible, or just return empty
                 content = await page.content()
                 if "No hits. Try adding an asterisk" in content or "No results" in content:
                     logger.info(f"[{self.name}] No results found for '{query}'")
+                elif "Just a moment..." in content or "Attention Required" in content:
+                    logger.warning(f"[{self.name}] Cloudflare blocked request.")
                 else:
                     logger.warning(f"[{self.name}] Search results table not found.")
                 return []
