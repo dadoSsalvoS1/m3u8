@@ -3,34 +3,217 @@
 {% block title %}Magnet Finder{% endblock %}
 
 {% block content %}
-<section class="search-panel">
-  <h1 class="search-title">Search for Movie Magnets</h1>
-  <p class="search-subtitle">
-    Type a movie name and we will scan torrent sources for magnet links and quality info.
-  </p>
+<div class="tabs">
+  <button class="tab-link active" onclick="openTab(event, 'tab-search')">Quick Search</button>
+  <button class="tab-link" onclick="openTab(event, 'tab-scanner')">Advanced Scanner</button>
+</div>
 
-  <form id="search-form" class="search-form">
-    <input
-      id="query"
-      type="text"
-      placeholder="Enter a movie name, e.g. 'Inception 1080p'"
-      autocomplete="off"
-      required
-    />
-    <button type="submit" id="search-button">
-      <span class="btn-label">Search</span>
-      <span class="btn-spinner" aria-hidden="true"></span>
-    </button>
-  </form>
+<div id="tab-search" class="tab-content active">
+  <section class="search-panel">
+    <h1 class="search-title">Search for Movie Magnets</h1>
+    <p class="search-subtitle">
+      Type a movie name and we will scan torrent sources for magnet links and quality info.
+    </p>
 
-  <div id="feedback" class="feedback" aria-live="polite"></div>
-</section>
+    <form id="search-form" class="search-form">
+      <input
+        id="query"
+        type="text"
+        placeholder="Enter a movie name, e.g. 'Inception 1080p'"
+        autocomplete="off"
+        required
+      />
+      <button type="submit" id="search-button">
+        <span class="btn-label">Search</span>
+        <span class="btn-spinner" aria-hidden="true"></span>
+      </button>
+    </form>
 
-<section id="results-section" class="results-section hidden">
-  <div class="results-header">
-    <h2>Results</h2>
-    <span id="results-count" class="results-count"></span>
-  </div>
-  <div id="results" class="results-grid"></div>
-</section>
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+  </section>
+
+  <section id="results-section" class="results-section hidden">
+    <div class="results-header">
+      <h2>Results</h2>
+      <span id="results-count" class="results-count"></span>
+    </div>
+    <div id="results" class="results-grid"></div>
+  </section>
+</div>
+
+<div id="tab-scanner" class="tab-content" style="display:none">
+  <section class="search-panel">
+    <h1 class="search-title">Category Scanner</h1>
+    <p class="search-subtitle">
+      Perform deep scans of categories or schedule automatic updates.
+    </p>
+
+    <form id="scanner-form" class="scanner-form">
+      <div class="form-group">
+        <label>Site</label>
+        <select id="scan-site">
+          <option value="YTS">YTS (Movies)</option>
+          <option value="RedeTorrent" disabled>RedeTorrent (Coming Soon)</option>
+          <option value="1337x" disabled>1337x (Coming Soon)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Genre</label>
+        <select id="scan-genre">
+          <option value="all">All</option>
+          <option value="action">Action</option>
+          <option value="comedy">Comedy</option>
+          <option value="drama">Drama</option>
+          <option value="horror">Horror</option>
+          <option value="sci-fi">Sci-Fi</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Year From</label>
+        <input type="number" id="scan-year-from" placeholder="YYYY" min="1900" max="2030">
+      </div>
+
+      <div class="form-group">
+        <label>Year To</label>
+        <input type="number" id="scan-year-to" placeholder="YYYY" min="1900" max="2030">
+      </div>
+
+      <div class="form-group">
+        <label>Schedule</label>
+        <select id="scan-interval">
+          <option value="once">Run Once (Now)</option>
+          <option value="hourly">Every Hour</option>
+          <option value="daily">Every Day</option>
+        </select>
+      </div>
+
+      <button type="submit" id="scan-button" class="btn-primary">
+        Start Scan
+      </button>
+    </form>
+
+    <div id="scan-feedback" class="feedback"></div>
+  </section>
+
+  <section class="jobs-section">
+    <h3>Active Scans / History</h3>
+    <ul id="jobs-list" class="jobs-list"></ul>
+  </section>
+
+  <section class="results-section">
+    <h3>Scanned Items (Database)</h3>
+    <button onclick="loadScanResults()" class="btn-small">Refresh Results</button>
+    <div id="scan-results-grid" class="results-grid"></div>
+  </section>
+</div>
+
+<style>
+/* Simple Tab Styles */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tab-link {
+  background: transparent;
+  border: none;
+  color: var(--text-subtle);
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+}
+.tab-link.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-content {
+  animation: fadeIn 0.3s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.scanner-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-group label {
+  font-size: 0.85rem;
+  color: var(--text-subtle);
+}
+.form-group select, .form-group input {
+  background: rgba(6, 8, 24, 0.8);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 8px;
+}
+.jobs-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 30px;
+}
+.jobs-list li {
+  background: var(--bg-elevated-soft);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.status-running { background: #d4a72c; color: #000; }
+.status-completed { background: #2cd468; color: #000; }
+.status-failed { background: #d42c2c; color: #fff; }
+.status-pending { background: #555; color: #fff; }
+
+.btn-small {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+</style>
+
+<script>
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tab-content");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+    tabcontent[i].classList.remove("active");
+  }
+  tablinks = document.getElementsByClassName("tab-link");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  document.getElementById(tabName).classList.add("active");
+  evt.currentTarget.className += " active";
+}
+</script>
 {% endblock %}

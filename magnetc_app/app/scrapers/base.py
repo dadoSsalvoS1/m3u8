@@ -23,3 +23,14 @@ class BaseScraper(ABC):
         May raise CloudflareBlocked if detection occurs.
         """
         pass
+
+    async def browse(self, context: BrowserContext, category: str, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Browses a specific category with filters to extract elements.
+        Default implementation returns empty list.
+        Override this in subclasses.
+
+        :param category: e.g., "movies", "tv", "games"
+        :param filters: dict containing 'genre', 'year_from', 'year_to', 'sort', 'limit'
+        """
+        return []

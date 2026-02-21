@@ -148,3 +148,86 @@ async function handleSearch(event) {
 if (form) {
   form.addEventListener("submit", handleSearch);
 }
+
+// Scanner Logic
+const scannerForm = document.getElementById("scanner-form");
+const jobsListEl = document.getElementById("jobs-list");
+const scanResultsEl = document.getElementById("scan-results-grid");
+
+if (scannerForm) {
+  scannerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const site = document.getElementById("scan-site").value;
+    const genre = document.getElementById("scan-genre").value;
+    const yearFrom = document.getElementById("scan-year-from").value;
+    const yearTo = document.getElementById("scan-year-to").value;
+    const interval = document.getElementById("scan-interval").value;
+
+    const feedback = document.getElementById("scan-feedback");
+    feedback.textContent = "Scheduling scan...";
+
+    try {
+      const res = await fetch("/api/scan/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          site,
+          interval,
+          filters: { genre, year_from: yearFrom, year_to: yearTo }
+        })
+      });
+      const data = await res.json();
+      feedback.textContent = `Scan started! ID: ${data.scan_id}`;
+      feedback.className = "feedback success";
+      loadJobs();
+    } catch (err) {
+      console.error(err);
+      feedback.textContent = "Failed to start scan.";
+      feedback.className = "feedback error";
+    }
+  });
+}
+
+async function loadJobs() {
+  if (!jobsListEl) return;
+  try {
+    const res = await fetch("/api/scan/jobs");
+    const data = await res.json();
+    jobsListEl.innerHTML = data.jobs.map(j => `
+      <li>
+        <span>#${j.id} ${j.scan_type} (${j.schedule_interval})</span>
+        <span class="status-badge status-${j.status}">${j.status}</span>
+      </li>
+    `).join("");
+  } catch (e) { console.error(e); }
+}
+
+async function loadScanResults() {
+  if (!scanResultsEl) return;
+  try {
+    const res = await fetch("/api/scan/results?limit=50");
+    const data = await res.json();
+
+    // Reuse render logic or similar
+    scanResultsEl.innerHTML = data.results.map(r => `
+      <article class="result-card">
+        <h3 class="result-title">${escapeHtml(r.title)}</h3>
+        <div class="result-meta">
+          <span class="pill badge-source">${escapeHtml(r.source)}</span>
+          <span class="pill">${escapeHtml(r.quality)}</span>
+        </div>
+        <div class="result-links">
+          ${r.magnet ? `<a href="${r.magnet}">Magnet</a>` : ''}
+        </div>
+      </article>
+    `).join("");
+  } catch (e) { console.error(e); }
+}
+
+// Initial load
+if (document.getElementById("tab-scanner")) {
+  loadJobs();
+  loadScanResults();
+  // Poll jobs every 5s
+  setInterval(loadJobs, 5000);
+}
