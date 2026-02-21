@@ -1,10 +1,10 @@
 import asyncio
 from typing import Any, Dict, List
 
-from playwright.async_api import BrowserContext
+from playwright.async_api import BrowserContext, TimeoutError as PlaywrightTimeoutError
 
 from app.config import configure_logging
-from app.exceptions import CloudflareBlocked
+from app.exceptions import CloudflareBlocked, NavigationTimeout
 from .base import BaseScraper
 
 logger = configure_logging()
@@ -29,7 +29,11 @@ class PirateBayScraper(BaseScraper):
             logger.info(f"[{self.name}] Navigating to: {search_url}")
             try:
                 # Wait longer for initial load in case of redirects/challenges
-                await page.goto(search_url, timeout=60000, wait_until="domcontentloaded")
+                # Increased to 90s as requested/implied by timeout issues
+                await page.goto(search_url, timeout=90000, wait_until="domcontentloaded")
+            except PlaywrightTimeoutError as e:
+                logger.warning(f"[{self.name}] Navigation timed out.")
+                raise NavigationTimeout(f"[{self.name}] Timeout loading {search_url}")
             except Exception as e:
                 logger.error(f"[{self.name}] Failed to load URL: {e}")
                 return []
@@ -143,6 +147,8 @@ class PirateBayScraper(BaseScraper):
                     })
 
         except CloudflareBlocked:
+            raise
+        except NavigationTimeout:
             raise
         except Exception as e:
             logger.error(f"[{self.name}] Error during search: {e}")

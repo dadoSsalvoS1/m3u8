@@ -14,7 +14,7 @@ from .scrapers import (
     ApacheTorrentScraper,
 )
 from .scrapers.generic import GenericScraper
-from .exceptions import CloudflareBlocked
+from .exceptions import CloudflareBlocked, NavigationTimeout
 from .database import db
 from .discovery import discovery
 from playwright._impl._errors import TargetClosedError
@@ -22,7 +22,7 @@ from playwright._impl._errors import TargetClosedError
 logger = configure_logging()
 
 # Global config for headless mode, can be set by app factory or run.py
-HEADLESS_MODE = True
+HEADLESS_MODE = Config.HEADLESS_DEFAULT
 
 def set_headless_mode(headless: bool):
     global HEADLESS_MODE
@@ -133,6 +133,11 @@ async def search_movie(
                     results.extend(res)
                 elif isinstance(res, CloudflareBlocked):
                     logger.warning(f"Cloudflare challenge detected: {res}")
+                    if current_headless_mode:
+                        needs_retry_headed = True
+                elif isinstance(res, NavigationTimeout):
+                    logger.warning(f"Navigation timeout detected: {res}")
+                    # If we timed out in headless, maybe headed/manual helps or just retry
                     if current_headless_mode:
                         needs_retry_headed = True
                 elif isinstance(res, TargetClosedError):

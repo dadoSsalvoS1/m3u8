@@ -32,6 +32,9 @@ class Config:
     # Logging
     LOG_LEVEL: int = logging.INFO
 
+    # App Settings
+    HEADLESS_DEFAULT: bool = False # Default to Headed mode as requested
+
     @classmethod
     def get_random_user_agent(cls) -> str:
         """Returns a random user-agent from the list."""
