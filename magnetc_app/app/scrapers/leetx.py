@@ -31,8 +31,8 @@ class LeetXScraper(BaseScraper):
 
             # Check for results table, waiting longer for Cloudflare challenge
             try:
-                # Wait up to 30s to allow Cloudflare check to clear automatically
-                await page.wait_for_selector("table.table-list", timeout=30000)
+                # Wait up to 60s (was 30s) to allow manual CAPTCHA solving in headed mode
+                await page.wait_for_selector("table.table-list", timeout=60000)
             except Exception:
                 content = await page.content()
                 if "No results were found" in content:
@@ -41,16 +41,25 @@ class LeetXScraper(BaseScraper):
                     logger.warning(f"[{self.name}] Cloudflare challenge detected.")
                     raise CloudflareBlocked(f"[{self.name}] Blocked by Cloudflare.")
                 else:
-                    logger.warning(f"[{self.name}] Results table not found or blocked.")
-                return []
+                    # Sometimes the table selector might be different or not loaded properly
+                    # Check if there are ANY links or structure
+                    if await page.locator("a[href^='/torrent/']").count() > 0:
+                         logger.info(f"[{self.name}] Table selector failed but torrent links found. Proceeding.")
+                    else:
+                        logger.warning(f"[{self.name}] Results table not found or blocked.")
+                        return []
 
             # Extract detail links
             links = await page.locator("table.table-list tbody tr td.name a[href^='/torrent/']").all()
+            if not links:
+                # Fallback selector if table structure changed
+                links = await page.locator("a[href^='/torrent/']").all()
+
 
             detail_urls = []
             for link in links[:Config.MAX_DETAIL_PAGES]: # Limit to avoid too many requests
                 href = await link.get_attribute("href")
-                if href:
+                if href and href.startswith("/torrent/"):
                     detail_urls.append(self.BASE_URL + href)
 
             logger.info(f"[{self.name}] Found {len(detail_urls)} torrents. extracting details...")

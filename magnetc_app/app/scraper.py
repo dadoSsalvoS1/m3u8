@@ -49,10 +49,14 @@ async def search_movie(
                 headless=current_headless_mode,
                 args=["--disable-blink-features=AutomationControlled"],
             )
+            # Increase default navigation timeout when headed to allow CAPTCHA solving
+            default_timeout = 90000 if not current_headless_mode else 30000
+
             context = await browser.new_context(
                 user_agent=Config.MAGNET_SITE_USER_AGENT,
                 viewport={"width": 1280, "height": 720},
             )
+            context.set_default_timeout(default_timeout)
 
             scrapers = [
                 FilmesTorrentScraper(),
