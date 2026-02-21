@@ -22,20 +22,23 @@ class LeetXScraper(BaseScraper):
             logger.info(f"[{self.name}] Navigating to: {search_url}")
 
             try:
+                # Wait longer for initial load in case of redirects/challenges
                 await page.goto(search_url, timeout=60000, wait_until="domcontentloaded")
             except Exception as e:
                 logger.error(f"[{self.name}] Failed to load URL: {e}")
                 return []
 
-            # Check for results table
+            # Check for results table, waiting longer for Cloudflare challenge
             try:
-                await page.wait_for_selector("table.table-list", timeout=10000)
+                # Wait up to 30s to allow Cloudflare check to clear automatically
+                await page.wait_for_selector("table.table-list", timeout=30000)
             except Exception:
                 content = await page.content()
                 if "No results were found" in content:
                     logger.info(f"[{self.name}] No results found for '{query}'")
                 elif "Just a moment..." in content or "Attention Required" in content:
-                    logger.warning(f"[{self.name}] Cloudflare blocked request.")
+                    logger.warning(f"[{self.name}] Cloudflare challenge detected. Retry logic or manual verification needed.")
+                    # If headless=False, the user has a chance to see and solve it.
                 else:
                     logger.warning(f"[{self.name}] Results table not found or blocked.")
                 return []

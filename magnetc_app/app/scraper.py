@@ -8,6 +8,12 @@ from .scrapers import FilmesTorrentScraper, PirateBayScraper, LeetXScraper, YTSS
 
 logger = configure_logging()
 
+# Global config for headless mode, can be set by app factory or run.py
+HEADLESS_MODE = True
+
+def set_headless_mode(headless: bool):
+    global HEADLESS_MODE
+    HEADLESS_MODE = headless
 
 async def search_movie(
     query: str,
@@ -22,18 +28,22 @@ async def search_movie(
     if not query or not query.strip():
         return []
 
-    logger.info("Starting search for query: '%s'", query)
+    logger.info(f"Starting search for query: '{query}' (Headless: {HEADLESS_MODE})")
 
     results: list[dict[str, Any]] = []
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            headless=True,
+            headless=HEADLESS_MODE,
             args=["--disable-blink-features=AutomationControlled"],
+            # If not headless, we might want to slow down slightly or just let user see
         )
         # Create a shared context. Note: some sites might need separate contexts if cookies conflict,
         # but for simple scraping shared context is usually fine and faster.
-        context = await browser.new_context(user_agent=Config.MAGNET_SITE_USER_AGENT)
+        context = await browser.new_context(
+            user_agent=Config.MAGNET_SITE_USER_AGENT,
+            viewport={"width": 1280, "height": 720}, # Better viewport for headed
+        )
 
         scrapers = [
             FilmesTorrentScraper(),
