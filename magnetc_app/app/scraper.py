@@ -5,6 +5,7 @@ from playwright.async_api import async_playwright
 
 from .config import Config, configure_logging
 from .scrapers import FilmesTorrentScraper, PirateBayScraper, LeetXScraper, YTSScraper
+from .exceptions import CloudflareBlocked
 
 logger = configure_logging()
 
@@ -28,44 +29,63 @@ async def search_movie(
     if not query or not query.strip():
         return []
 
-    logger.info(f"Starting search for query: '{query}' (Headless: {HEADLESS_MODE})")
+    # Local attempt control
+    attempt = 1
+    # If headless is False globally, we don't need to retry as headed.
+    max_attempts = 2 if HEADLESS_MODE else 1
 
+    current_headless_mode = HEADLESS_MODE
     results: list[dict[str, Any]] = []
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=HEADLESS_MODE,
-            args=["--disable-blink-features=AutomationControlled"],
-            # If not headless, we might want to slow down slightly or just let user see
-        )
-        # Create a shared context. Note: some sites might need separate contexts if cookies conflict,
-        # but for simple scraping shared context is usually fine and faster.
-        context = await browser.new_context(
-            user_agent=Config.MAGNET_SITE_USER_AGENT,
-            viewport={"width": 1280, "height": 720}, # Better viewport for headed
-        )
+    while attempt <= max_attempts:
+        logger.info(f"Starting search for query: '{query}' (Attempt {attempt}/{max_attempts}, Headless: {current_headless_mode})")
 
-        scrapers = [
-            FilmesTorrentScraper(),
-            PirateBayScraper(),
-            LeetXScraper(),
-            YTSScraper(),
-        ]
+        # We start fresh on each attempt to avoid partial duplicates or mixed states
+        results = []
+        needs_retry_headed = False
 
-        # Run all scrapers concurrently
-        tasks = [scraper.search(context, query) for scraper in scrapers]
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=current_headless_mode,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            context = await browser.new_context(
+                user_agent=Config.MAGNET_SITE_USER_AGENT,
+                viewport={"width": 1280, "height": 720},
+            )
 
-        # Use gather but catch exceptions individually to not fail all
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
+            scrapers = [
+                FilmesTorrentScraper(),
+                PirateBayScraper(),
+                LeetXScraper(),
+                YTSScraper(),
+            ]
 
-        for res in responses:
-            if isinstance(res, list):
-                results.extend(res)
-            elif isinstance(res, Exception):
-                logger.error(f"Scraper failed with error: {res}")
+            tasks = [scraper.search(context, query) for scraper in scrapers]
+            responses = await asyncio.gather(*tasks, return_exceptions=True)
 
-        await context.close()
-        await browser.close()
+            for res in responses:
+                if isinstance(res, list):
+                    results.extend(res)
+                elif isinstance(res, CloudflareBlocked):
+                    logger.warning(f"Cloudflare challenge detected: {res}")
+                    if current_headless_mode:
+                        needs_retry_headed = True
+                elif isinstance(res, Exception):
+                    logger.error(f"Scraper failed with error: {res}")
+
+            await context.close()
+            await browser.close()
+
+        # Retry logic
+        if needs_retry_headed and attempt < max_attempts:
+            logger.warning("Cloudflare blocked scraping. Switching to HEADED mode for manual verification/solving...")
+            current_headless_mode = False
+            attempt += 1
+            await asyncio.sleep(2)
+            continue
+
+        break
 
     # Deduplicate by magnet link
     unique_results: list[dict[str, Any]] = []

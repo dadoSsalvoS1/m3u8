@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from playwright.async_api import BrowserContext
 
 from app.config import configure_logging
+from app.exceptions import CloudflareBlocked
 from .base import BaseScraper
 
 logger = configure_logging()
@@ -44,7 +45,8 @@ class PirateBayScraper(BaseScraper):
                 if "No hits. Try adding an asterisk" in content or "No results" in content:
                     logger.info(f"[{self.name}] No results found for '{query}'")
                 elif "Just a moment..." in content or "Attention Required" in content:
-                    logger.warning(f"[{self.name}] Cloudflare challenge detected and not solved automatically.")
+                    logger.warning(f"[{self.name}] Cloudflare challenge detected.")
+                    raise CloudflareBlocked(f"[{self.name}] Blocked by Cloudflare.")
                 else:
                     logger.warning(f"[{self.name}] Search results container not found.")
                 return []
@@ -140,6 +142,8 @@ class PirateBayScraper(BaseScraper):
                         "source": self.name
                     })
 
+        except CloudflareBlocked:
+            raise
         except Exception as e:
             logger.error(f"[{self.name}] Error during search: {e}")
         finally:

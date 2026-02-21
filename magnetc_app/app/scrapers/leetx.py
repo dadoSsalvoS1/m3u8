@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 from playwright.async_api import BrowserContext, Page
 
 from app.config import Config, configure_logging
+from app.exceptions import CloudflareBlocked
 from .base import BaseScraper
 
 logger = configure_logging()
@@ -37,8 +38,8 @@ class LeetXScraper(BaseScraper):
                 if "No results were found" in content:
                     logger.info(f"[{self.name}] No results found for '{query}'")
                 elif "Just a moment..." in content or "Attention Required" in content:
-                    logger.warning(f"[{self.name}] Cloudflare challenge detected. Retry logic or manual verification needed.")
-                    # If headless=False, the user has a chance to see and solve it.
+                    logger.warning(f"[{self.name}] Cloudflare challenge detected.")
+                    raise CloudflareBlocked(f"[{self.name}] Blocked by Cloudflare.")
                 else:
                     logger.warning(f"[{self.name}] Results table not found or blocked.")
                 return []
@@ -84,6 +85,8 @@ class LeetXScraper(BaseScraper):
                 except Exception as e:
                     logger.warning(f"[{self.name}] Failed to extract details from {url}: {e}")
 
+        except CloudflareBlocked:
+            raise
         except Exception as e:
             logger.error(f"[{self.name}] Error during search: {e}")
         finally:
