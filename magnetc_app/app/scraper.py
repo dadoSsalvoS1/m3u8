@@ -4,7 +4,15 @@ from typing import Any, Dict, List
 from playwright.async_api import async_playwright
 
 from .config import Config, configure_logging
-from .scrapers import FilmesTorrentScraper, PirateBayScraper, LeetXScraper, YTSScraper
+from .scrapers import (
+    FilmesTorrentScraper,
+    PirateBayScraper,
+    LeetXScraper,
+    YTSScraper,
+    KickassTorrentsScraper,
+    RedeTorrentScraper,
+    ApacheTorrentScraper
+)
 from .exceptions import CloudflareBlocked
 
 logger = configure_logging()
@@ -63,6 +71,9 @@ async def search_movie(
                 PirateBayScraper(),
                 LeetXScraper(),
                 YTSScraper(),
+                KickassTorrentsScraper(),
+                RedeTorrentScraper(),
+                ApacheTorrentScraper(),
             ]
 
             tasks = [scraper.search(context, query) for scraper in scrapers]
