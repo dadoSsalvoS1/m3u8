@@ -60,9 +60,18 @@ async def search_movie(
             # Increase default navigation timeout when headed to allow CAPTCHA solving
             default_timeout = 90000 if not current_headless_mode else 30000
 
+            # Use random User-Agent for better stealth
+            user_agent = Config.get_random_user_agent()
+
             context = await browser.new_context(
-                user_agent=Config.MAGNET_SITE_USER_AGENT,
+                user_agent=user_agent,
                 viewport={"width": 1280, "height": 720},
+                device_scale_factor=1,
+                has_touch=False,
+                is_mobile=False,
+                java_script_enabled=True,
+                locale="en-US",
+                timezone_id="America/New_York", # Common timezone
             )
             context.set_default_timeout(default_timeout)
 
