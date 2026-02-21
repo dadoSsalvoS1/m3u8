@@ -31,8 +31,8 @@ class LeetXScraper(BaseScraper):
 
             # Check for results table, waiting longer for Cloudflare challenge
             try:
-                # Wait up to 60s (was 30s) to allow manual CAPTCHA solving in headed mode
-                await page.wait_for_selector("table.table-list", timeout=60000)
+                # Wait up to 90s (was 60s) to allow manual CAPTCHA solving in headed mode
+                await page.wait_for_selector("table.table-list", timeout=90000)
             except Exception:
                 content = await page.content()
                 if "No results were found" in content:
@@ -41,8 +41,7 @@ class LeetXScraper(BaseScraper):
                     logger.warning(f"[{self.name}] Cloudflare challenge detected.")
                     raise CloudflareBlocked(f"[{self.name}] Blocked by Cloudflare.")
                 else:
-                    # Sometimes the table selector might be different or not loaded properly
-                    # Check if there are ANY links or structure
+                    # Fallback check
                     if await page.locator("a[href^='/torrent/']").count() > 0:
                          logger.info(f"[{self.name}] Table selector failed but torrent links found. Proceeding.")
                     else:
@@ -52,7 +51,6 @@ class LeetXScraper(BaseScraper):
             # Extract detail links
             links = await page.locator("table.table-list tbody tr td.name a[href^='/torrent/']").all()
             if not links:
-                # Fallback selector if table structure changed
                 links = await page.locator("a[href^='/torrent/']").all()
 
 

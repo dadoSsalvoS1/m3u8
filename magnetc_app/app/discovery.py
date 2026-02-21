@@ -36,15 +36,33 @@ class WebDiscovery:
 
             # DDG selectors
             input_sel = "input[name='q']"
-            await page.wait_for_selector(input_sel)
-            await page.fill(input_sel, f"{query} torrent magnet download")
-            await page.press(input_sel, "Enter")
+            try:
+                await page.wait_for_selector(input_sel, timeout=10000)
+                await page.fill(input_sel, f"{query} torrent magnet download")
+                await page.press(input_sel, "Enter")
+            except Exception as e:
+                logger.error(f"[Discovery] Failed to find search input: {e}")
+                return []
 
-            # Wait for results
-            await page.wait_for_selector(".react-results--main", timeout=10000)
+            # Wait for results with robust selectors
+            # DDG changes classes often. We look for the main results container or links.
+            # Try waiting for generic 'results' id or class patterns
+            try:
+                await page.wait_for_selector("#links, .react-results--main, [data-testid='mainline']", timeout=15000)
+            except Exception:
+                logger.warning("[Discovery] Search results timeout. Trying to extract links anyway.")
 
             # Extract links
-            links = await page.locator("article h2 a").all()
+            # Try multiple selectors for result links
+            selectors = ["article h2 a", "#links .result__a", "[data-testid='result-title-a']", "a[href^='http']"]
+            links = []
+
+            for sel in selectors:
+                found = await page.locator(sel).all()
+                if found:
+                    links = found
+                    break
+
             candidate_urls = []
             for link in links:
                 href = await link.get_attribute("href")
@@ -61,18 +79,21 @@ class WebDiscovery:
             from urllib.parse import urlparse
 
             for url in candidate_urls:
-                parsed = urlparse(url)
-                domain = f"{parsed.scheme}://{parsed.netloc}"
+                try:
+                    parsed = urlparse(url)
+                    domain = f"{parsed.scheme}://{parsed.netloc}"
 
-                # Skip known
-                if any(d in domain for d in known_domains):
-                    continue
-                # Skip search engines or generic sites (simplified blacklist)
-                if "google" in domain or "duckduckgo" in domain or "youtube" in domain:
-                    continue
+                    # Skip known
+                    if any(d in domain for d in known_domains):
+                        continue
+                    # Skip search engines or generic sites (simplified blacklist)
+                    if "google" in domain or "duckduckgo" in domain or "youtube" in domain or "bing" in domain:
+                        continue
 
-                if domain not in candidates:
-                    candidates.append(domain)
+                    if domain not in candidates:
+                        candidates.append(domain)
+                except:
+                    continue
 
             logger.info(f"[Discovery] {len(candidates)} new candidate domains to check.")
 

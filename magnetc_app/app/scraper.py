@@ -17,6 +17,7 @@ from .scrapers.generic import GenericScraper
 from .exceptions import CloudflareBlocked
 from .database import db
 from .discovery import discovery
+from playwright._impl._errors import TargetClosedError
 
 logger = configure_logging()
 
@@ -134,11 +135,16 @@ async def search_movie(
                     logger.warning(f"Cloudflare challenge detected: {res}")
                     if current_headless_mode:
                         needs_retry_headed = True
+                elif isinstance(res, TargetClosedError):
+                    logger.warning("Browser window was closed manually by user or system.")
                 elif isinstance(res, Exception):
                     logger.error(f"Scraper failed with error: {res}")
 
-            await context.close()
-            await browser.close()
+            try:
+                await context.close()
+                await browser.close()
+            except Exception:
+                pass
 
         # Retry logic
         if needs_retry_headed and attempt < max_attempts:

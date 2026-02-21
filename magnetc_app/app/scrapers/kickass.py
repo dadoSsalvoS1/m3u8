@@ -30,10 +30,8 @@ class KickassTorrentsScraper(BaseScraper):
 
             # Check for Cloudflare or Results
             try:
-                # Wait for the results table or the "No files found" text
-                # We can check for ".data" or ".turnover" class often used in KAT clones
-                # In the curl output we saw <tr class="odd"> and <div class="torrentname">
-                await page.wait_for_selector(".torrentname", timeout=30000)
+                # Wait for results: .torrentname OR tr.odd/tr.even
+                await page.wait_for_selector(".torrentname, tr.odd, tr.even", timeout=30000)
             except Exception:
                 content = await page.content()
                 if "No files found" in content or "Nothing found" in content:
@@ -42,31 +40,37 @@ class KickassTorrentsScraper(BaseScraper):
                     logger.warning(f"[{self.name}] Cloudflare challenge detected.")
                     raise CloudflareBlocked(f"[{self.name}] Blocked by Cloudflare.")
                 else:
-                    logger.warning(f"[{self.name}] Results container not found.")
-                return []
+                    # Check manually for rows if selector failed but content loaded
+                    if await page.locator("tr").count() > 5:
+                         logger.info(f"[{self.name}] Table rows found despite timeout on specific class.")
+                    else:
+                        logger.warning(f"[{self.name}] Results container not found.")
+                        return []
 
             # Extract results
-            # The structure seems to be:
-            # <div class="torrentname">
-            #   <a href="/...html" class="normalgrey font12px plain bold">Title</a>
-            # And the magnet/download link is in a sibling/parent or nearby.
-            # In the curl output:
-            # <div class="iaconbox center floatright">
-            #    <a data-download="" href="/download/..." class="icon16"><i class="ka ka16 ka-arrow-down"></i></a>
-            # </div>
-            # This looks like a .torrent download link, not a magnet.
-            # Many KAT clones only host .torrent files or hide magnets behind the detail page.
-            # Let's check if we can get magnets from detail pages or if there is a magnet link in the row.
-
-            # Since the main page only shows /download/... (which is likely a .torrent file),
-            # we need to visit the detail page to get the magnet link.
-
             rows = await page.locator("tr.odd, tr.even").all()
+            if not rows:
+                # Fallback: look for any row with links
+                rows = await page.locator("tr").all()
 
             detail_urls = []
             for row in rows[:Config.MAX_DETAIL_PAGES]:
                 # Find the title link
+                # Priority: .torrentname a, then celltext a, then any a
                 link = row.locator(".torrentname a.normalgrey")
+                if await link.count() == 0:
+                    link = row.locator(".celltext a").first
+                if await link.count() == 0:
+                    # heuristic: find link that is not user/category
+                    links = await row.locator("a").all()
+                    for l in links:
+                        href = await l.get_attribute("href")
+                        if href and "user" not in href and "category" not in href and ".html" in href:
+                            link = l
+                            break
+
+                if isinstance(link, list): continue # generic fallback failed or empty
+
                 if await link.count() > 0:
                     href = await link.get_attribute("href")
                     if href:
@@ -88,8 +92,7 @@ class KickassTorrentsScraper(BaseScraper):
                         title = title.replace("Download", "").replace("Torrent", "").replace("- Kickass Torrents", "").strip()
 
                         # Info text
-                        # usually in a data block
-                        info_div = page.locator(".data") # generic guess
+                        info_div = page.locator(".data")
                         info_text = ""
                         if await info_div.count():
                             info_text = await info_div.first.inner_text()
